@@ -10,9 +10,9 @@ export default class Board extends React.Component {
     const clients = this.getClients();
     this.state = {
       clients: {
-        backlog: clients.filter(client => !client.status || client.status === 'backlog'),
-        inProgress: clients.filter(client => client.status && client.status === 'in-progress'),
-        complete: clients.filter(client => client.status && client.status === 'complete'),
+        backlog: clients,
+        inProgress: [],
+        complete: [],
       }
     }
     this.swimlanes = {
@@ -47,9 +47,34 @@ export default class Board extends React.Component {
       id: companyDetails[0],
       name: companyDetails[1],
       description: companyDetails[2],
-      status: companyDetails[3],
+      status: 'backlog',
     }));
   }
+  componentDidMount() {
+    const backlogEl = this.swimlanes.backlog.current;
+    const inProgressEl = this.swimlanes.inProgress.current;
+    const completeEl = this.swimlanes.complete.current;
+    if (!backlogEl || !inProgressEl || !completeEl) return;
+
+    this.drake = Dragula([backlogEl, inProgressEl, completeEl]);
+
+    const statusMap = [
+      [backlogEl,    'Card-grey'],
+      [inProgressEl, 'Card-blue'],
+      [completeEl,   'Card-green'],
+    ];
+
+    this.drake.on('drop', (el, target) => {
+      el.classList.remove('Card-grey', 'Card-blue', 'Card-green');
+      const match = statusMap.find(([node]) => node === target);
+      if (match) el.classList.add(match[1]);
+    });
+  }
+
+  componentWillUnmount() {
+    if (this.drake) this.drake.destroy();
+  }
+
   renderSwimlane(name, clients, ref) {
     return (
       <Swimlane name={name} clients={clients} dragulaRef={ref}/>
